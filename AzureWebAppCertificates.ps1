@@ -5,7 +5,6 @@ $teamsWebhook = (Get-AutomationPSCredential -Name 'TeamsWebhookSSLAlert').GetNet
 $connectionName = "AzureRunAsConnection"
 try 
 {
-
     $servicePrincipalConnection = Get-AutomationConnection -Name $connectionName         
 
     Add-AzureRmAccount `
@@ -19,7 +18,8 @@ catch
     if (!$servicePrincipalConnection) {
         $ErrorMessage = "Connection $connectionName not found."
         throw $ErrorMessage
-    } else {
+    } 
+    else {
         Write-Error -Message $_.Exception
         throw $_.Exception
     }
@@ -27,7 +27,7 @@ catch
 $subscriptions = Get-AzureRmSubscription `
                     | Where-Object {$_.'State' -eq "Enabled"}
 
-foreach($subscription in $subscriptions){
+foreach ($subscription in $subscriptions){
     Set-AzureRmContext -Subscriptionid $subscription.Id   
     $currentSubscription = (Get-AzureRmContext).Subscription
     $resourceGroups = Get-AzureRmResourceGroup
@@ -46,74 +46,74 @@ foreach($subscription in $subscriptions){
 
             $arrayTable = New-Object 'System.Collections.Generic.List[System.Object]'
 
-            if(($expiredCertificates | measure | % count) -gt 0){
+            if(($expiredCertificates | Measure-Object | ForEach-Object count) -gt 0){
                 $section = @{
                     activityTitle = "Expired certificate(s)"
-                    activitySubtitle = "$($expiredCertificates | measure | % count) expired certificate(s)!"
+                    activitySubtitle = "$($expiredCertificates | Measure-Object | ForEach-Object count) expired certificate(s)!"
                     activityText = "-----------------------------------------------"
                     activityImage = "https://www.iconsdb.com/icons/preview/soylent-red/ssl-badge-xxl.png"
                     facts  = @(
                         foreach ($expiredCertificate in $expiredCertificates){
                             @{
-                            name  = "$($expiredCertificate.FriendlyName)"
-                            value = ""
+                                name  = "$($expiredCertificate.FriendlyName)"
+                                value = ""
                             }  
                             @{
-                            name  = "Subject:"
-                            value = "$($expiredCertificate.subjectName)"
+                                name  = "Subject:"
+                                value = "$($expiredCertificate.subjectName)"
                             }
                             @{
-                            name  = "Expiration Date:"
-                            value = "$($expiredCertificate.ExpirationDate)"
+                                name  = "Expiration Date:"
+                                value = "$($expiredCertificate.ExpirationDate)"
                             }
                             @{
-                            name  = "Resource group:"
-                            value = "$(($expiredCertificate.Id).split("/")[4])"
+                                name  = "Resource group:"
+                                value = "$(($expiredCertificate.Id).split("/")[4])"
                             }
                             @{
-                            name  = "Subscription:"
-                            value = "$($currentSubscription.Name)"
+                                name  = "Subscription:"
+                                value = "$($currentSubscription.Name)"
                             }
                             @{
-                            name  = " "
-                            value = " "
+                                name  = " "
+                                value = " "
                             }                            
                         }
                     )
                 }
                 $arrayTable.add($section)
             }
-            if(($aboutToExpire | measure | % count) -gt 0){
+            if(($aboutToExpire | Measure-Object | ForEach-Object count) -gt 0){
                 $section = @{
                     activityTitle = "Certificate(s) about to expire"
-                    activitySubtitle = "$($aboutToExpire | measure | % count) certificate(s) about to expire!"
+                    activitySubtitle = "$($aboutToExpire | Measure-Object | ForEach-Object count) certificate(s) about to expire!"
                     activityText = "-----------------------------------------------"
                     activityImage = "https://www.iconsdb.com/icons/preview/yellow/ssl-badge-xxl.png"
                     facts  = @(
                         foreach ($aboutTo in $aboutToExpire){
                             @{
-                            name  = "$($aboutTo.FriendlyName)"
-                            value = ""
+                                name  = "$($aboutTo.FriendlyName)"
+                                value = ""
                             }  
                             @{
-                            name  = "Subject:"
-                            value = "$($aboutTo.subjectName)"
+                                name  = "Subject:"
+                                value = "$($aboutTo.subjectName)"
                             }
                             @{
-                            name  = "Expiration Date:"
-                            value = "$($aboutTo.ExpirationDate)"
+                                name  = "Expiration Date:"
+                                value = "$($aboutTo.ExpirationDate)"
                             }
                             @{
-                            name  = "Resource group:"
-                            value = "$(($aboutTo.Id).split("/")[4])"
+                                name  = "Resource group:"
+                                value = "$(($aboutTo.Id).split("/")[4])"
                             }
                             @{
-                            name  = "Subscription:"
-                            value = "$($currentSubscription.Name)"
+                                name  = "Subscription:"
+                                value = "$($currentSubscription.Name)"
                             }  
                             @{
-                            name  = " "
-                            value = " "
+                                name  = " "
+                                value = " "
                             }      
                         }
                     )
@@ -123,9 +123,9 @@ foreach($subscription in $subscriptions){
 
             if($arrayTable.count -gt 0){
                 $body = ConvertTo-Json -Depth 8 @{
-                title    = "SSL Alert"
-                text = "Subscription: $($currentSubscription.Name)" 
-                sections = $ArrayTable
+                    title    = "SSL Alert"
+                    text = "Subscription: $($currentSubscription.Name)" 
+                    sections = $arrayTable
                 }
 
                 Invoke-RestMethod   -uri $teamsWebhook `
@@ -137,6 +137,6 @@ foreach($subscription in $subscriptions){
     }
     else
     {
-        Write-Output "There are no resourcegroups within this subscription"
+        Write-Output "There are no resource groups within this subscription"
     }
 }
